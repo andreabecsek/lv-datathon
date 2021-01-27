@@ -1,1 +1,1 @@
-# lv-datathon
+# LV datathon
