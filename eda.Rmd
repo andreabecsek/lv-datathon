@@ -1,0 +1,182 @@
+---
+title: "EDA"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(glmnet)
+library(corrplot)
+theme_set(theme_minimal())
+```
+
+Load data and remove some variables.
+```{r}
+data = read.csv("~/Downloads/new_train/new_train.csv", stringsAsFactors=TRUE)
+# remove State.Code as its the same as State and Country because there is only one
+# also remove gender. could lead to biased predictions
+data = data %>% select(-c(State.Code, Country, Gender, Customer, Effective.To.Date))
+str(data)
+```
+
+
+Claims by state. Nothing obvious here.
+```{r}
+data %>% 
+  ggplot(aes(y=State,x=Total.Claim.Amount))+
+  geom_boxplot(aes(color=State), alpha=0.3)
+```
+
+Looking at the coverage types, it is clear that overall having an Extended or Premium leads to larger claims. Makes sense.
+```{r}
+data %>% 
+  ggplot(aes(y=Coverage,x=Total.Claim.Amount))+
+  geom_boxplot(aes(color=Coverage), alpha=0.3)
+```
+
+There does seem to be some trend suggesting that the higher the education form one has completed, the lower a claim they will make on average.
+```{r}
+data %>% 
+  ggplot(aes(x=reorder(Education, -Total.Claim.Amount),y=Total.Claim.Amount))+
+  geom_boxplot(aes(color=Education), alpha=0.3)+
+  xlab('')
+```
+
+Employment and total claim. Maybe unemployed have slightly higher claims on average.
+```{r}
+data %>% 
+  ggplot(aes(x=reorder(EmploymentStatus, -Total.Claim.Amount),y=Total.Claim.Amount))+
+  geom_boxplot(aes(color=EmploymentStatus), alpha=0.3)+
+  xlab('')
+```
+
+This could again be an important factor. There is quite a big difference between suburban and rural claims.
+```{r}
+data %>% 
+  ggplot(aes(x=reorder(Location.Code, -Total.Claim.Amount),y=Total.Claim.Amount))+
+  geom_boxplot(aes(color=Location.Code), alpha=0.3)+
+  xlab('')
+```
+
+Marital status and total claim. Single people have a higher total claim on average.
+```{r}
+data %>% 
+  ggplot(aes(x=reorder(Marital.Status, -Total.Claim.Amount),y=Total.Claim.Amount))+
+  geom_boxplot(aes(color=Marital.Status), alpha=0.3)+
+  xlab('')
+```
+
+Policies and total claim.
+```{r}
+data %>% 
+  ggplot(aes(x=Policy,y=Total.Claim.Amount))+
+  geom_boxplot(aes(color=Policy), alpha=0.3)
+```
+
+Policy type and total claim.
+```{r}
+data %>% 
+  ggplot(aes(x=reorder(Policy.Type, -Total.Claim.Amount),y=Total.Claim.Amount))+
+  geom_boxplot(aes(color=Policy.Type), alpha=0.3)+
+  xlab('')
+```
+
+Claim reason and total claim.
+```{r}
+data %>% 
+  ggplot(aes(x=reorder(Claim.Reason, -Total.Claim.Amount),y=Total.Claim.Amount))+
+  geom_boxplot(aes(color=Claim.Reason), alpha=0.3)+
+  xlab('')
+```
+
+Sales channel and total claim.
+```{r}
+data %>% 
+  ggplot(aes(x=reorder(Sales.Channel, -Total.Claim.Amount),y=Total.Claim.Amount))+
+  geom_boxplot(aes(color=Sales.Channel), alpha=0.3)+
+  xlab('')
+```
+
+Vehicle class and total claim. Luxury cars have a higher claim on average.
+```{r}
+data %>% 
+  ggplot(aes(x=reorder(Vehicle.Class, -Total.Claim.Amount),y=Total.Claim.Amount))+
+  geom_boxplot(aes(color=Vehicle.Class), alpha=0.3)+
+  xlab('')
+```
+
+Vehicle size and total claim.
+```{r}
+data %>% 
+  ggplot(aes(x=reorder(Vehicle.Size, -Total.Claim.Amount),y=Total.Claim.Amount))+
+  geom_boxplot(aes(color=Vehicle.Size), alpha=0.3)+
+  xlab('')
+```
+
+Income and total claim.
+```{r}
+data %>% 
+  ggplot(aes(x=Income,y=Total.Claim.Amount))+
+  geom_point(aes(color=EmploymentStatus), alpha=0.3)
+```
+
+Total claim by number of policies.
+```{r}
+data %>% 
+  ggplot(aes(x=as.factor(Number.of.Policies),y=Total.Claim.Amount))+
+  geom_jitter( alpha=0.2)
+```
+
+<!-- ### Models -->
+<!-- Fit a lasso. -->
+<!-- ```{r} -->
+<!-- # split into train and test -->
+<!-- indeces = sample(1:dim(data)[1], 0.8*dim(data)[1]) -->
+<!-- train=data[indeces,] -->
+<!-- test=data[-indeces,] -->
+<!-- #train data -->
+<!-- X=model.matrix(Total.Claim.Amount~., data) -->
+<!-- X_train=X[indeces,] -->
+<!-- y_train=train$Total.Claim.Amount -->
+<!-- # test data -->
+<!-- X_test=X[-indeces,] -->
+<!-- y_test=test$Total.Claim.Amount -->
+<!-- # fit model -->
+<!-- model=cv.glmnet(x=X_train, y=y_train, type.measure = "mae") -->
+<!-- lambda.min=model$lambda.min #best lambda -->
+<!-- # fit model with best lambda -->
+<!-- model_best=glmnet(x=X_train, y=y_train, lambda = lambda.min) -->
+<!-- mean(abs(y_test-predict(model_best,s="lambda.min", newx=X_test, type="response"))) -->
+<!-- ``` -->
+
+<!-- Fit linear regression. The mae is 90 and the errors do seem normally distributed. -->
+<!-- ```{r} -->
+<!-- model.lm=lm(Total.Claim.Amount~Response+Coverage+Education+Location.Code+Policy+Monthly.Premium.Auto+Income+Marital.Status+Monthly.Premium.Auto:Marital.Status+EmploymentStatus, data=train) -->
+<!-- summary(model.lm) -->
+<!-- mean(abs(predict(model.lm, test)-test$Total.Claim.Amount)) -->
+<!-- hist(test$Total.Claim.Amount-predict(model.lm, test), breaks = 40) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- beta=coef(a) -->
+<!-- tmp <- as.data.frame(as.matrix(beta)) -->
+<!-- tmp$coef <- row.names(tmp) -->
+<!-- tmp <- reshape::melt(tmp, id = "coef") -->
+<!-- tmp$variable <- as.numeric(gsub("s", "", tmp$variable)) -->
+<!-- tmp$lambda <- a$lambda[tmp$variable+1] # extract the lambda values -->
+<!-- tmp$norm <- apply(abs(beta[-1,]), 2, sum)[tmp$variable+1] # compute L1 norm -->
+<!-- # x11(width = 13/2.54, height = 9/2.54) -->
+<!-- ggplot(tmp[tmp$coef != "(Intercept)",], aes(lambda, value, color = coef, linetype = coef)) +  -->
+<!--     geom_line() +  -->
+<!--     scale_x_log10() +  -->
+<!--     xlab("Lambda (log scale)") +  -->
+<!--     guides(color = guide_legend(title = ""),  -->
+<!--            linetype = guide_legend(title = "")) + -->
+<!--     theme_bw() +  -->
+<!--     theme(legend.key.width = unit(3,"lines"), -->
+<!--           legend.position = 'bottom') -->
+<!-- ``` -->
+
